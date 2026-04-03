@@ -116,6 +116,59 @@ function writeLog(key, playerId, action, ip) {
   } catch {}
 }
 
+
+// ─── BOT: LİSANS AKTİVASYON (Licotok popup'tan gelir) ──────────────────────
+// POST /validate-license  ← bot lisans aktivasyon butonuna basınca buraya istek atıyor
+app.post('/validate-license', (req, res) => {
+  const { licenseKey, playerId } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+  if (!licenseKey) {
+    return res.json({ valid: false, message: 'Lisans anahtarı boş' });
+  }
+
+  const license = db.prepare('SELECT * FROM licenses WHERE key = ?').get(licenseKey);
+  const check = isLicenseValid(license);
+
+  if (!check.valid) {
+    writeLog(licenseKey, playerId, 'activate_fail:' + check.reason, ip);
+    return res.json({
+      valid: false,
+      message: check.reason === 'expired' ? 'Lisans süresi dolmuş' :
+               check.reason === 'revoked' ? 'Lisans iptal edilmiş' :
+               'Geçersiz lisans anahtarı'
+    });
+  }
+
+  // Aktivasyon tarihi kaydet
+  if (!license.activated_at) {
+    db.prepare('UPDATE licenses SET activated_at = datetime("now"), player_id = ? WHERE key = ?')
+      .run(playerId || '', licenseKey);
+  }
+
+  // Bitiş tarihi hesapla
+  const expirationDate = license.expires_at
+    ? license.expires_at.slice(0, 10)
+    : '2099-12-31';
+
+  // Bot için şifreli tarih (validate-token ile uyumlu)
+  const supportDevs = encryptDate(expirationDate);
+
+  writeLog(licenseKey, playerId, 'activate_ok', ip);
+
+  // Bot bu formatı bekliyor: valid, token, expirationDate, refreshToken
+  res.json({
+    valid: true,
+    token: licenseKey,           // token olarak lisans anahtarını kullan
+    refreshToken: licenseKey,    // refreshToken da aynı
+    expirationDate: expirationDate,
+    supportDevs: supportDevs,
+    plan: license.plan || 'pro',
+    userName: license.user_name || 'MrtBot User',
+    message: 'Lisans başarıyla aktive edildi!'
+  });
+});
+
 // ─── BOT API ENDPOINTLERI ────────────────────────────────────────────────
 
 // POST /validate-token  ← bot buraya istek atıyor
