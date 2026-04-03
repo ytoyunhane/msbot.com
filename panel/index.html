@@ -6,7 +6,7 @@
 <title>MrtBot — Lisans Paneli</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  ,::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{
     --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1d28;
     --border:#2a3050;--accent:#4f8ef7;--accent2:#6ba3ff;
@@ -470,7 +470,7 @@ function nav(id) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick')?.includes(`'${id}'`)) n.classList.add('active');
+    if (n.getAttribute('onclick')?.includes('${id}')) n.classList.add('active');
   });
   if (id === 'loglar') loadLogs();
 }
@@ -587,7 +587,7 @@ async function genLicense() {
     plan: document.getElementById('g-plan').value
   });
 
-  btn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> Oluştur`;
+  btn.innerHTML = <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> Oluştur;
   btn.disabled = false;
 
   if (!d?.success) { toast('❌ Hata oluştu', 'err'); return; }
@@ -614,12 +614,12 @@ async function genBulk() {
   if (!d?.success) { toast('❌ Hata oluştu', 'err'); return; }
   document.getElementById('bulk-area').value = d.keys.join('\n');
   document.getElementById('bulk-result').style.display = 'block';
-  toast(`✅ ${d.count} lisans oluşturuldu!`);
+  toast(✅ ${d.count} lisans oluşturuldu!);
   loadAll();
 }
 
 async function toggleLic(id) {
-  const d = await api('POST', `/admin/licenses/${id}/toggle`);
+  const d = await api('POST', /admin/licenses/${id}/toggle);
   if (!d?.success) { toast('❌ Hata', 'err'); return; }
   toast(d.is_active ? '✅ Lisans aktifleştirildi' : '🚫 Lisans iptal edildi');
   loadAll();
@@ -627,7 +627,7 @@ async function toggleLic(id) {
 
 async function deleteLic(id) {
   if (!confirm('Bu lisansı silmek istediğinize emin misiniz?')) return;
-  const d = await api('DELETE', `/admin/licenses/${id}`);
+  const d = await api('DELETE', /admin/licenses/${id});
   if (!d?.success) { toast('❌ Hata', 'err'); return; }
   toast('🗑️ Lisans silindi');
   loadAll();
@@ -646,7 +646,7 @@ function copyKey(id, isTextarea = false) {
 
 function whatsapp() {
   const key = document.getElementById('gen-key').textContent;
-  const text = encodeURIComponent(`🤖 MrtBot Lisans Anahtarınız:\n\n${key}\n\nBotu açın → Genel Bakış → Lisans sekmesine girin ve bu kodu yapıştırın.`);
+  const text = encodeURIComponent(🤖 MrtBot Lisans Anahtarınız:\n\n${key}\n\nBotu açın → Genel Bakış → Lisans sekmesine girin ve bu kodu yapıştırın.);
   window.open('https://wa.me/?text=' + text, '_blank');
 }
 
@@ -662,7 +662,7 @@ function downloadTxt() {
 function exportCSV() {
   const header = 'Lisans,Kullanıcı,Plan,Durum,Süre,Bitiş\n';
   const rows = allLicenses.map(l =>
-    `${l.key},${l.user_name},${l.plan||'pro'},${getStatus(l)},${l.duration_days},${l.expires_at||'Sınırsız'}`
+    ${l.key},${l.user_name},${l.plan||'pro'},${getStatus(l)},${l.duration_days},${l.expires_at||'Sınırsız'}
   ).join('\n');
   const blob = new Blob(['\uFEFF' + header + rows], {type: 'text/csv;charset=utf-8'});
   const a = document.createElement('a');
@@ -685,7 +685,7 @@ let toastT;
 function toast(msg, type='ok') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `show ${type}`;
+  t.className = show ${type};
   clearTimeout(toastT);
   toastT = setTimeout(() => t.className = '', 3000);
 }
