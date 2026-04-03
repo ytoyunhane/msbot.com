@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MrtBot — Lisans Paneli</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1d28;
+    --border:#2a3050;--accent:#4f8ef7;--accent2:#6ba3ff;
+    --green:#3fc87a;--red:#e05555;--yellow:#f5c542;
+    --text:#c8d4f0;--muted:#5a6a8a;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+
+  /* LOGIN */
+  #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 30%,#1a2a4a 0%,#0d0f14 70%)}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:360px;text-align:center}
+  .login-logo{width:64px;height:64px;background:linear-gradient(135deg,#4f8ef7,#1a3a6b);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;margin:0 auto 20px}
+  .login-box h2{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px}
+  .login-box p{font-size:13px;color:var(--muted);margin-bottom:28px}
+  .login-box input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-size:14px;outline:none;margin-bottom:12px;font-family:inherit}
+  .login-box input:focus{border-color:var(--accent)}
+  .login-box button{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s}
+  .login-box button:hover{background:var(--accent2)}
+  .login-error{color:var(--red);font-size:12px;margin-top:8px;display:none}
+
+  /* APP */
+  #app{display:none}
+  header{background:linear-gradient(90deg,#0d1428,#13203a);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+  .logo{width:36px;height:36px;background:linear-gradient(135deg,#4f8ef7,#1a3a6b);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff}
+  header h1{font-size:18px;font-weight:700;color:#fff}
+  header h1 span{color:var(--accent)}
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .badge{background:rgba(79,142,247,0.15);border:1px solid rgba(79,142,247,0.3);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .btn-logout{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:12px;transition:all 0.15s}
+  .btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+  .layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 65px)}
+
+  aside{background:var(--bg2);border-right:1px solid var(--border);padding:20px 0}
+  .nav-section{padding:6px 16px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:10px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all 0.15s}
+  .nav-item:hover{color:var(--text);background:rgba(79,142,247,0.05)}
+  .nav-item.active{color:var(--accent);background:rgba(79,142,247,0.08);border-left-color:var(--accent)}
+  .nav-item svg{width:15px;height:15px;flex-shrink:0}
+
+  main{padding:28px;overflow-y:auto}
+  .page{display:none}.page.active{display:block}
+
+  /* STATS */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+  .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .stat-card.blue::before{background:var(--accent)}
+  .stat-card.green::before{background:var(--green)}
+  .stat-card.yellow::before{background:var(--yellow)}
+  .stat-card.red::before{background:var(--red)}
+  .stat-card.purple::before{background:#a855f7}
+  .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .stat-value{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace}
+  .stat-card.blue .stat-value{color:var(--accent)}
+  .stat-card.green .stat-value{color:var(--green)}
+  .stat-card.yellow .stat-value{color:var(--yellow)}
+  .stat-card.red .stat-value{color:var(--red)}
+  .stat-card.purple .stat-value{color:#a855f7}
+
+  /* SECTIONS */
+  .section-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+  /* GEN BOX */
+  .gen-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:20px}
+  .gen-box h3{font-size:13px;font-weight:600;color:#fff;margin-bottom:16px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end}
+  .form-row-2{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+  .form-group{display:flex;flex-direction:column;gap:5px}
+  label{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px}
+  input,select{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color 0.15s}
+  input:focus,select:focus{border-color:var(--accent)}
+  select option{background:var(--bg3)}
+
+  .btn{padding:9px 18px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+  .btn-danger{background:rgba(224,85,85,0.12);color:var(--red);border:1px solid rgba(224,85,85,0.25)}
+  .btn-danger:hover{background:rgba(224,85,85,0.22)}
+  .btn-success{background:rgba(63,200,122,0.12);color:var(--green);border:1px solid rgba(63,200,122,0.25)}
+  .btn-success:hover{background:rgba(63,200,122,0.22)}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-sm{padding:5px 11px;font-size:11px}
+  .btn-warn{background:rgba(245,197,66,0.12);color:var(--yellow);border:1px solid rgba(245,197,66,0.25)}
+  .btn-warn:hover{background:rgba(245,197,66,0.22)}
+
+  /* RESULT */
+  .license-result{background:var(--bg3);border:1px solid var(--green);border-radius:9px;padding:14px 18px;margin-top:14px;display:none;align-items:center;gap:12px}
+  .license-result.show{display:flex}
+  .license-key{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--green);flex:1;letter-spacing:1px}
+
+  /* TABLE */
+  .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .table-head{padding:14px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px}
+  .table-head h3{font-size:13px;font-weight:600;color:#fff}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;padding:10px 18px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);font-weight:600}
+  td{padding:11px 18px;font-size:12px;border-bottom:1px solid rgba(42,48,80,0.4);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(79,142,247,0.03)}
+  .key-cell{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent)}
+
+  .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600}
+  .status-badge::before{content:'';width:5px;height:5px;border-radius:50%}
+  .status-badge.active{background:rgba(63,200,122,0.12);color:var(--green)}
+  .status-badge.active::before{background:var(--green)}
+  .status-badge.expired{background:rgba(224,85,85,0.12);color:var(--red)}
+  .status-badge.expired::before{background:var(--red)}
+  .status-badge.pending{background:rgba(245,197,66,0.12);color:var(--yellow)}
+  .status-badge.pending::before{background:var(--yellow)}
+  .status-badge.revoked{background:rgba(90,106,138,0.15);color:var(--muted)}
+  .status-badge.revoked::before{background:var(--muted)}
+
+  .actions{display:flex;gap:5px;flex-wrap:wrap}
+
+  /* SEARCH */
+  .search-wrap{position:relative;flex:1;max-width:260px;margin-left:auto}
+  .search-wrap input{width:100%;padding-left:30px}
+  .search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+
+  /* BULK */
+  .bulk-keys-area{width:100%;height:110px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:10px;color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:11px;resize:vertical;outline:none;line-height:1.8}
+
+  /* LOGS */
+  .log-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(42,48,80,0.3);font-size:12px}
+  .log-item:last-child{border-bottom:none}
+  .log-action{font-family:'JetBrains Mono',monospace;font-size:11px}
+  .log-ok{color:var(--green)}.log-fail{color:var(--red)}
+  .log-time{color:var(--muted);margin-left:auto;font-size:10px}
+
+  /* EMPTY */
+  .empty{text-align:center;padding:50px 20px;color:var(--muted)}
+  .empty-icon{font-size:40px;margin-bottom:10px;opacity:0.4}
+  .empty p{font-size:13px}
+
+  /* LOADING */
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.2);border-left-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;transform:translateY(60px);opacity:0;transition:all 0.3s;z-index:9999;display:flex;align-items:center;gap:8px;pointer-events:none}
+  #toast.show{transform:translateY(0);opacity:1}
+  #toast.ok{background:#1a2e1f;border:1px solid var(--green);color:var(--green)}
+  #toast.err{background:#2a1a1a;border:1px solid var(--red);color:var(--red)}
+
+  /* SETTINGS */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .settings-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .settings-card h3{font-size:13px;font-weight:600;color:#fff;margin-bottom:14px}
+  .setting-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(42,48,80,0.4);font-size:12px}
+  .setting-row:last-child{border-bottom:none;padding-bottom:0}
+  .setting-label{color:var(--muted)}
+
+  .url-display{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);background:var(--bg3);padding:6px 10px;border-radius:6px;border:1px solid var(--border);word-break:break-all}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">M</div>
+    <h2>MrtBot Paneli</h2>
+    <p>Devam etmek için giriş yapın</p>
+    <input type="password" id="login-pass" placeholder="Admin şifresi" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Giriş Yap</button>
+    <div class="login-error" id="login-err">Şifre yanlış!</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo">M</div>
+    <h1><span>Mrt</span>Bot Lisans Paneli</h1>
+    <div class="header-right">
+      <span class="badge" id="server-url-badge">localhost:3000</span>
+      <button class="btn-logout" onclick="logout()">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <div class="nav-section">Genel</div>
+      <div class="nav-item active" onclick="nav('dashboard')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="nav('lisanslar')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+        Lisanslar
+      </div>
+      <div class="nav-item" onclick="nav('olustur')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+        Lisans Oluştur
+      </div>
+      <div class="nav-section">Sistem</div>
+      <div class="nav-item" onclick="nav('loglar')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Loglar
+      </div>
+      <div class="nav-item" onclick="nav('kurulum')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Kurulum Rehberi
+      </div>
+    </aside>
+
+    <main>
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats">
+          <div class="stat-card blue"><div class="stat-label">Toplam</div><div class="stat-value" id="s-total">—</div></div>
+          <div class="stat-card green"><div class="stat-label">Aktif</div><div class="stat-value" id="s-active">—</div></div>
+          <div class="stat-card yellow"><div class="stat-label">Bekleyen</div><div class="stat-value" id="s-pending">—</div></div>
+          <div class="stat-card red"><div class="stat-label">Süresi Dolmuş</div><div class="stat-value" id="s-expired">—</div></div>
+          <div class="stat-card purple"><div class="stat-label">İptal Edilmiş</div><div class="stat-value" id="s-revoked">—</div></div>
+        </div>
+        <div class="section-title">Son Lisanslar</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Lisans Anahtarı</th><th>Kullanıcı</th><th>Süre</th><th>Durum</th><th>Tarih</th></tr></thead>
+            <tbody id="dash-tbody"></tbody>
+          </table>
+          <div class="empty" id="dash-empty" style="display:none"><div class="empty-icon">📋</div><p>Lisans yok</p></div>
+        </div>
+      </div>
+
+      <!-- LİSANSLAR -->
+      <div class="page" id="page-lisanslar">
+        <div class="section-title">Tüm Lisanslar</div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <h3>Lisans Listesi</h3>
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input type="text" placeholder="Ara..." oninput="filterTable(this.value)" id="search-input">
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV</button>
+            <button class="btn btn-primary btn-sm" onclick="loadLicenses()">↻ Yenile</button>
+          </div>
+          <table>
+            <thead><tr><th>Lisans Anahtarı</th><th>Kullanıcı</th><th>Oyuncu ID</th><th>Plan</th><th>Durum</th><th>Bitiş</th><th>İşlem</th></tr></thead>
+            <tbody id="lic-tbody"></tbody>
+          </table>
+          <div class="empty" id="lic-empty" style="display:none"><div class="empty-icon">🔑</div><p>Lisans bulunamadı</p></div>
+        </div>
+      </div>
+
+      <!-- OLUŞTUR -->
+      <div class="page" id="page-olustur">
+        <div class="section-title">Yeni Lisans Oluştur</div>
+
+        <div class="gen-box">
+          <h3>🔑 Tek Lisans</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Kullanıcı Adı</label>
+              <input type="text" id="g-user" placeholder="örn: murat123">
+            </div>
+            <div class="form-group">
+              <label>Süre</label>
+              <select id="g-dur">
+                <option value="7">7 Gün</option>
+                <option value="14">14 Gün</option>
+                <option value="30" selected>30 Gün</option>
+                <option value="60">60 Gün</option>
+                <option value="90">90 Gün</option>
+                <option value="180">180 Gün</option>
+                <option value="365">1 Yıl</option>
+                <option value="9999">Sınırsız</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Plan</label>
+              <select id="g-plan">
+                <option value="basic">Basic</option>
+                <option value="pro" selected>Pro</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="genLicense()" id="gen-btn">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+              Oluştur
+            </button>
+          </div>
+          <div class="license-result" id="gen-result">
+            <div style="flex:1">
+              <div style="font-size:10px;color:var(--muted);margin-bottom:4px">OLUŞTURUlan LİSANS</div>
+              <div class="license-key" id="gen-key"></div>
+            </div>
+            <button class="btn btn-success btn-sm" onclick="copyKey('gen-key')">📋 Kopyala</button>
+            <button class="btn btn-ghost btn-sm" onclick="whatsapp()">💬 WhatsApp</button>
+          </div>
+        </div>
+
+        <div class="gen-box">
+          <h3>📦 Toplu Lisans Oluştur</h3>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>Adet (max 200)</label>
+              <input type="number" id="b-count" value="10" min="1" max="200">
+            </div>
+            <div class="form-group">
+              <label>Süre</label>
+              <select id="b-dur">
+                <option value="7">7 Gün</option>
+                <option value="30" selected>30 Gün</option>
+                <option value="90">90 Gün</option>
+                <option value="365">1 Yıl</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="genBulk()" id="bulk-btn">📦 Oluştur</button>
+          </div>
+          <div id="bulk-result" style="display:none;margin-top:14px">
+            <label style="display:block;margin-bottom:6px">Oluşturulan Lisanslar</label>
+            <textarea class="bulk-keys-area" id="bulk-area" readonly></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn btn-success btn-sm" onclick="copyKey('bulk-area',true)">📋 Hepsini Kopyala</button>
+              <button class="btn btn-ghost btn-sm" onclick="downloadTxt()">⬇ TXT İndir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGLAR -->
+      <div class="page" id="page-loglar">
+        <div class="section-title">Sistem Logları</div>
+        <div class="gen-box">
+          <h3>Son 20 İşlem</h3>
+          <div id="log-list"><div class="empty"><div class="empty-icon">📋</div><p>Log yükleniyor...</p></div></div>
+        </div>
+      </div>
+
+      <!-- KURULUM -->
+      <div class="page" id="page-kurulum">
+        <div class="section-title">Bot Kurulum Rehberi</div>
+        <div class="gen-box" style="line-height:1.8;font-size:13px;color:var(--text)">
+          <h3 style="margin-bottom:20px">🚀 Sunucuyu Nasıl Yayına Alırsın?</h3>
+
+          <p style="color:var(--muted);margin-bottom:20px">Aşağıdaki seçeneklerden birini kullan:</p>
+
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">
+            <div style="color:var(--accent);font-weight:700;margin-bottom:10px">🆓 Seçenek 1: Railway (Ücretsiz, Önerilen)</div>
+            <ol style="padding-left:20px;color:var(--muted);display:flex;flex-direction:column;gap:6px">
+              <li><a href="https://railway.app" target="_blank" style="color:var(--accent)">railway.app</a>'e git ve GitHub ile giriş yap</li>
+              <li>"New Project" → "Deploy from GitHub repo" seç</li>
+              <li>Sunucu klasörünü GitHub'a yükle (ya da ZIP'i sürükle bırak)</li>
+              <li>Variables (Ortam Değişkenleri) bölümüne şunları ekle:</li>
+            </ol>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green)">
+              ADMIN_PASSWORD=güçlü_şifren<br>
+              JWT_SECRET=rastgele_uzun_bir_string<br>
+              LICENSE_SECRET=başka_bir_rastgele_string
+            </div>
+            <div style="margin-top:10px;color:var(--muted)">5. Deploy olunca Railway sana bir URL verir (örn: <span style="color:var(--accent)">mrtbot-xxx.railway.app</span>)</div>
+          </div>
+
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">
+            <div style="color:var(--green);font-weight:700;margin-bottom:10px">🖥️ Seçenek 2: Kendi VPS'in (Ubuntu)</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text);line-height:2">
+              <span style="color:var(--muted)"># Node.js kur</span><br>
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -<br>
+              sudo apt install -y nodejs<br><br>
+              <span style="color:var(--muted)"># Sunucu dosyalarını yükle ve çalıştır</span><br>
+              cd mrtbot-server<br>
+              cp .env.example .env<br>
+              nano .env  <span style="color:var(--muted)"># şifreleri değiştir</span><br>
+              npm install<br>
+              npm install -g pm2<br>
+              pm2 start server.js --name mrtbot<br>
+              pm2 save
+            </div>
+          </div>
+
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px">
+            <div style="color:var(--yellow);font-weight:700;margin-bottom:10px">🔌 Sunucu URL'ini Bot'a Tanımla</div>
+            <p style="color:var(--muted);margin-bottom:10px">Sunucu çalıştıktan sonra <code style="color:var(--accent)">background.js</code> içindeki şu satırları güncelle:</p>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;color:var(--text);line-height:2">
+              <span style="color:var(--muted)">// ESKİ (fociisoftware.com):</span><br>
+              <span style="color:var(--red)">const urls = ["https://glad.fociisoftware.com/validate-token", ...]</span><br><br>
+              <span style="color:var(--muted)">// YENİ (kendi sunucun):</span><br>
+              <span style="color:var(--green)">const urls = ["https://SENİN-SUNUCUN.railway.app/validate-token"]</span>
+            </div>
+            <div style="margin-top:12px;padding:10px;background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.2);border-radius:6px;color:var(--accent);font-size:12px">
+              💡 Bu değişikliği ZIP paketini indirirken otomatik olarak da yapabiliriz. Sunucu URL'ini gir:
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <input type="text" id="server-url-input" placeholder="https://mrtbot-xxx.railway.app" style="flex:1">
+              <button class="btn btn-primary btn-sm" onclick="updateServerUrl()">Kaydet & İndir</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── KONFIG ─────────────────────────────────────────────────────────────
+// Panel hangi sunucuya bağlanıyor? Aynı sunucuda çalışıyorsa '' bırak.
+let API = window.location.origin;
+let TOKEN = localStorage.getItem('mrtbot_token') || '';
+let allLicenses = [];
+
+// ─── LOGIN ───────────────────────────────────────────────────────────────
+async function doLogin() {
+  const pass = document.getElementById('login-pass').value;
+  try {
+    const r = await fetch(API + '/admin/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Hata');
+    TOKEN = d.token;
+    localStorage.setItem('mrtbot_token', TOKEN);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('server-url-badge').textContent = new URL(API).host;
+    loadAll();
+  } catch(e) {
+    document.getElementById('login-err').style.display = 'block';
+    document.getElementById('login-err').textContent = e.message;
+  }
+}
+
+function logout() {
+  TOKEN = '';
+  localStorage.removeItem('mrtbot_token');
+  location.reload();
+}
+
+// Token varsa otomatik giriş dene
+if (TOKEN) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('server-url-badge').textContent = new URL(API).host;
+  loadAll();
+}
+
+// ─── API YARDIMCILARI ────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const r = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (r.status === 401) { logout(); return null; }
+  return r.json();
+}
+
+// ─── NAVIGATION ─────────────────────────────────────────────────────────
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(`'${id}'`)) n.classList.add('active');
+  });
+  if (id === 'loglar') loadLogs();
+}
+
+// ─── LOAD ALL ────────────────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.all([loadStats(), loadLicenses()]);
+}
+
+async function loadStats() {
+  const d = await api('GET', '/admin/stats');
+  if (!d) return;
+  document.getElementById('s-total').textContent = d.total;
+  document.getElementById('s-active').textContent = d.active;
+  document.getElementById('s-pending').textContent = d.pending;
+  document.getElementById('s-expired').textContent = d.expired;
+  document.getElementById('s-revoked').textContent = d.revoked;
+}
+
+async function loadLicenses() {
+  const d = await api('GET', '/admin/licenses');
+  if (!d) return;
+  allLicenses = d;
+  renderLicTable(d);
+  renderDashTable(d.slice(0, 8));
+}
+
+async function loadLogs() {
+  const d = await api('GET', '/admin/stats');
+  if (!d) return;
+  const el = document.getElementById('log-list');
+  if (!d.logs?.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>Log bulunamadı</p></div>'; return; }
+  el.innerHTML = d.logs.map(l => {
+    const isOk = l.action.includes('ok');
+    return `<div class="log-item">
+      <span class="log-action ${isOk ? 'log-ok' : 'log-fail'}">${l.action}</span>
+      <span style="color:var(--muted);font-size:11px">${l.license_key ? l.license_key.slice(0,16)+'…' : '—'}</span>
+      <span style="color:var(--text);font-size:11px">${l.player_id || '—'}</span>
+      <span class="log-time">${new Date(l.created_at).toLocaleString('tr-TR')}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── RENDER TABLES ───────────────────────────────────────────────────────
+function getStatus(l) {
+  if (!l.is_active) return 'revoked';
+  if (!l.activated_at) return 'pending';
+  if (l.expires_at && new Date(l.expires_at) < new Date()) return 'expired';
+  return 'active';
+}
+function statusLabel(s) { return {active:'Aktif',expired:'Dolmuş',pending:'Bekliyor',revoked:'İptal'}[s]||s; }
+
+function renderDashTable(lics) {
+  const tbody = document.getElementById('dash-tbody');
+  const empty = document.getElementById('dash-empty');
+  if (!lics.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = lics.map(l => {
+    const s = getStatus(l);
+    return `<tr>
+      <td class="key-cell">${l.key}</td>
+      <td>${l.user_name}</td>
+      <td>${l.duration_days >= 9999 ? 'Sınırsız' : l.duration_days+' Gün'}</td>
+      <td><span class="status-badge ${s}">${statusLabel(s)}</span></td>
+      <td style="color:var(--muted)">${new Date(l.created_at).toLocaleDateString('tr-TR')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderLicTable(lics) {
+  const tbody = document.getElementById('lic-tbody');
+  const empty = document.getElementById('lic-empty');
+  if (!lics.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = lics.map(l => {
+    const s = getStatus(l);
+    const exp = l.expires_at ? new Date(l.expires_at).toLocaleDateString('tr-TR') : '∞';
+    return `<tr>
+      <td class="key-cell">${l.key}</td>
+      <td>${l.user_name}</td>
+      <td style="color:var(--muted);font-size:11px">${l.player_id || '—'}</td>
+      <td><span style="color:var(--accent);font-size:11px">${l.plan||'pro'}</span></td>
+      <td><span class="status-badge ${s}">${statusLabel(s)}</span></td>
+      <td style="color:var(--muted);font-size:11px">${exp}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm" onclick="copyText('${l.key}')">📋</button>
+          <button class="btn btn-warn btn-sm" onclick="toggleLic(${l.id})">${l.is_active ? '🚫' : '✅'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLic(${l.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTable(q) {
+  const filtered = allLicenses.filter(l =>
+    l.key.toLowerCase().includes(q.toLowerCase()) ||
+    l.user_name.toLowerCase().includes(q.toLowerCase()) ||
+    (l.player_id||'').toLowerCase().includes(q.toLowerCase())
+  );
+  renderLicTable(filtered);
+}
+
+// ─── LİSANS İŞLEMLERİ ───────────────────────────────────────────────────
+async function genLicense() {
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  const d = await api('POST', '/admin/licenses', {
+    userName: document.getElementById('g-user').value.trim() || 'Anonim',
+    durationDays: parseInt(document.getElementById('g-dur').value),
+    plan: document.getElementById('g-plan').value
+  });
+
+  btn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg> Oluştur`;
+  btn.disabled = false;
+
+  if (!d?.success) { toast('❌ Hata oluştu', 'err'); return; }
+  document.getElementById('gen-key').textContent = d.license.key;
+  document.getElementById('gen-result').classList.add('show');
+  toast('✅ Lisans oluşturuldu!');
+  loadAll();
+}
+
+async function genBulk() {
+  const btn = document.getElementById('bulk-btn');
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+
+  const d = await api('POST', '/admin/licenses/bulk', {
+    count: parseInt(document.getElementById('b-count').value),
+    durationDays: parseInt(document.getElementById('b-dur').value),
+    plan: 'pro'
+  });
+
+  btn.innerHTML = '📦 Oluştur';
+  btn.disabled = false;
+
+  if (!d?.success) { toast('❌ Hata oluştu', 'err'); return; }
+  document.getElementById('bulk-area').value = d.keys.join('\n');
+  document.getElementById('bulk-result').style.display = 'block';
+  toast(`✅ ${d.count} lisans oluşturuldu!`);
+  loadAll();
+}
+
+async function toggleLic(id) {
+  const d = await api('POST', `/admin/licenses/${id}/toggle`);
+  if (!d?.success) { toast('❌ Hata', 'err'); return; }
+  toast(d.is_active ? '✅ Lisans aktifleştirildi' : '🚫 Lisans iptal edildi');
+  loadAll();
+}
+
+async function deleteLic(id) {
+  if (!confirm('Bu lisansı silmek istediğinize emin misiniz?')) return;
+  const d = await api('DELETE', `/admin/licenses/${id}`);
+  if (!d?.success) { toast('❌ Hata', 'err'); return; }
+  toast('🗑️ Lisans silindi');
+  loadAll();
+}
+
+// ─── KOPYALA / İNDİR ────────────────────────────────────────────────────
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => toast('📋 Kopyalandı!'));
+}
+
+function copyKey(id, isTextarea = false) {
+  const el = document.getElementById(id);
+  const text = isTextarea ? el.value : el.textContent;
+  navigator.clipboard.writeText(text).then(() => toast('📋 Kopyalandı!'));
+}
+
+function whatsapp() {
+  const key = document.getElementById('gen-key').textContent;
+  const text = encodeURIComponent(`🤖 MrtBot Lisans Anahtarınız:\n\n${key}\n\nBotu açın → Genel Bakış → Lisans sekmesine girin ve bu kodu yapıştırın.`);
+  window.open('https://wa.me/?text=' + text, '_blank');
+}
+
+function downloadTxt() {
+  const content = document.getElementById('bulk-area').value;
+  const blob = new Blob([content], {type: 'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mrtbot_lisanslar.txt';
+  a.click();
+}
+
+function exportCSV() {
+  const header = 'Lisans,Kullanıcı,Plan,Durum,Süre,Bitiş\n';
+  const rows = allLicenses.map(l =>
+    `${l.key},${l.user_name},${l.plan||'pro'},${getStatus(l)},${l.duration_days},${l.expires_at||'Sınırsız'}`
+  ).join('\n');
+  const blob = new Blob(['\uFEFF' + header + rows], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mrtbot_lisanslar.csv';
+  a.click();
+  toast('⬇️ CSV indirildi!');
+}
+
+// ─── SUNUCU URL GÜNCELLE ─────────────────────────────────────────────────
+function updateServerUrl() {
+  const url = document.getElementById('server-url-input').value.trim().replace(/\/$/, '');
+  if (!url.startsWith('http')) { toast('❌ Geçerli bir URL girin (https://...)', 'err'); return; }
+  localStorage.setItem('mrtbot_server_url', url);
+  toast('✅ URL kaydedildi: ' + url);
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────
+let toastT;
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = '', 3000);
+}
+
+// Enter ile login
+document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+</script>
+</body>
+</html>
