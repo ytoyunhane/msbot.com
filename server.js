@@ -82,7 +82,8 @@ function isLicenseValid(license) {
 }
 
 function encryptDate(dateStr) {
-  const key = Buffer.from(LICENSE_SECRET.padEnd(32, '0').slice(0, 32));
+  // SHA-256 ile 32 byte key türet (Türkçe karakter / uzunluk sorununu önler)
+  const key = crypto.createHash('sha256').update(String(LICENSE_SECRET)).digest();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
   let enc = cipher.update(dateStr, 'utf8', 'hex');
@@ -244,32 +245,46 @@ app.post('/webhook/lemonsqueezy', (req, res) => {
 });
 
 // ─── GUMROAD WEBHOOK ─────────────────────────────────────────────────────
-// Her ürün için ayrı ping URL'i kullan — duration query param ile:
-//   30 gün:  https://msbotcom-production.up.railway.app/webhook/gumroad?duration=30
-//   90 gün:  https://msbotcom-production.up.railway.app/webhook/gumroad?duration=90
-//   365 gün: https://msbotcom-production.up.railway.app/webhook/gumroad?duration=365
+// Tek ürün, çok versiyon (Gumroad Versions özelliği).
+// Tüm versiyonlar için TEK ping URL:
+//   https://msbotcom-production.up.railway.app/webhook/gumroad
+// Gumroad, satın alınan versiyon adını "variants" alanında gönderir.
+// Versiyon adlarında gün sayısını yaz: "3 Days", "30 Days", "1 Year" vb.
+
+function parseDurationFromGumroad(variantStr) {
+  if (!variantStr) return 30;
+  const s = variantStr.toLowerCase();
+  if (/lifetime|unlimited|sınırsız/i.test(s)) return 9999;
+  // "1 year", "365 days", "1 yıl"
+  const yearMatch = s.match(/(\d+)\s*(year|yil|yıl)/);
+  if (yearMatch) return parseInt(yearMatch[1]) * 365;
+  // "3 days", "30 days", "90 gün" vb.
+  const dayMatch = s.match(/(\d+)\s*(day|gün|gun)/);
+  if (dayMatch) return parseInt(dayMatch[1]);
+  // Sadece rakam varsa (örn. "30")
+  const numMatch = s.match(/\b(\d+)\b/);
+  if (numMatch) return parseInt(numMatch[1]);
+  return 30;
+}
 
 app.post('/webhook/gumroad', async (req, res) => {
-  // Test modunda çalıştırma
   if (req.body.test === 'true') {
-    console.log('[Gumroad] Test ping alındı — atlanıyor');
+    console.log('[Gumroad] Test ping — atlanıyor');
     return res.json({ ok: true, test: true });
   }
 
   const customerEmail = req.body.email        || '';
-  const customerName  = req.body.full_name    || req.body.email || 'Kullanıcı';
-  const productName   = req.body.product_name || '';
+  const customerName  = req.body.full_name    || req.body.buyer_name || 'Kullanıcı';
   const purchaseId    = req.body.purchase_id  || '';
+  const variantStr    = req.body.variants     || req.body.variant || '';
 
   if (!customerEmail) {
     console.warn('[Gumroad] Email yok — atlanıyor');
     return res.status(400).json({ error: 'email eksik' });
   }
 
-  // Süreyi URL param'dan al (her ürün için farklı ping URL'i)
-  let durationDays = parseInt(req.query.duration) || 30;
-  const plan = req.query.plan || 'pro';
-
+  const durationDays = parseDurationFromGumroad(variantStr);
+  const plan = durationDays >= 9999 ? 'premium' : durationDays >= 90 ? 'pro' : 'basic';
   const expiresAt = calcExpiry(durationDays);
   const key = generateLicenseKey();
 
@@ -277,14 +292,14 @@ app.post('/webhook/gumroad', async (req, res) => {
     db.prepare(`
       INSERT INTO licenses (key, user_name, plan, duration_days, expires_at, notes)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).run(key, customerName, plan, durationDays, expiresAt, `Gumroad #${purchaseId}`);
+    `).run(key, customerName, plan, durationDays, expiresAt, `Gumroad #${purchaseId} — ${variantStr}`);
   } catch (e) {
     console.error('[Gumroad] DB hatası:', e.message);
     return res.status(500).json({ error: 'Lisans oluşturulamadı' });
   }
 
   writeLog(key, '', 'gumroad_created', '');
-  console.log(`[Gumroad] ✔ ${key} → ${customerEmail} (${durationDays}g)`);
+  console.log(`[Gumroad] ✔ ${key} → ${customerEmail} (${variantStr} = ${durationDays}g)`);
 
   sendLicenseEmail(customerEmail, customerName, key, durationDays, plan).catch(() => {});
 
