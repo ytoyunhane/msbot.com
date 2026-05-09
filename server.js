@@ -308,41 +308,51 @@ app.post('/webhook/gumroad', async (req, res) => {
 
 // ─── BOT: LİSANS AKTİVASYON ─────────────────────────────────────────────
 app.post('/validate-license', (req, res) => {
-  const { licenseKey, playerId } = req.body;
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  try {
+    const { licenseKey, playerId } = req.body || {};
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-  if (!licenseKey) return res.json({ valid: false, message: 'Lisans anahtarı boş' });
+    if (!licenseKey) return res.json({ valid: false, message: 'Lisans anahtarı boş' });
 
-  const license = db.prepare('SELECT * FROM licenses WHERE key = ?').get(licenseKey);
-  const check = isLicenseValid(license);
+    const license = db.prepare('SELECT * FROM licenses WHERE key = ?').get(licenseKey);
+    const check = isLicenseValid(license);
 
-  if (!check.valid) {
-    writeLog(licenseKey, playerId, 'activate_fail:' + check.reason, ip);
-    return res.json({
-      valid: false,
-      message: check.reason === 'expired' ? 'Lisans süresi dolmuş' :
-               check.reason === 'revoked' ? 'Lisans iptal edilmiş' :
-               'Geçersiz lisans anahtarı',
+    if (!check.valid) {
+      writeLog(licenseKey, playerId, 'activate_fail:' + check.reason, ip);
+      return res.json({
+        valid: false,
+        message: check.reason === 'expired' ? 'Lisans süresi dolmuş' :
+                 check.reason === 'revoked' ? 'Lisans iptal edilmiş' :
+                 'Geçersiz lisans anahtarı',
+      });
+    }
+
+    if (!license.activated_at) {
+      db.prepare("UPDATE licenses SET activated_at = datetime('now'), player_id = ? WHERE key = ?").run(playerId || '', licenseKey);
+    }
+
+    const expirationDate = license.expires_at ? String(license.expires_at).slice(0, 10) : '2099-12-31';
+
+    let supportDevs = '';
+    try { supportDevs = encryptDate(expirationDate); }
+    catch (e) { console.error('[encryptDate hatası]', e.message); }
+
+    writeLog(licenseKey, playerId, 'activate_ok', ip);
+
+    res.json({
+      valid: true,
+      token:          licenseKey,
+      refreshToken:   licenseKey,
+      expirationDate,
+      supportDevs,
+      plan:           license.plan || 'pro',
+      userName:       license.user_name || 'MS Bot User',
+      message:        'Lisans başarıyla aktive edildi!',
     });
+  } catch (e) {
+    console.error('[validate-license HATA]', e.stack || e.message);
+    res.status(500).json({ valid: false, message: 'Sunucu hatası: ' + e.message });
   }
-
-  if (!license.activated_at) {
-    db.prepare('UPDATE licenses SET activated_at = datetime("now"), player_id = ? WHERE key = ?').run(playerId || '', licenseKey);
-  }
-
-  const expirationDate = license.expires_at ? license.expires_at.slice(0, 10) : '2099-12-31';
-  writeLog(licenseKey, playerId, 'activate_ok', ip);
-
-  res.json({
-    valid: true,
-    token:          licenseKey,
-    refreshToken:   licenseKey,
-    expirationDate,
-    supportDevs:    encryptDate(expirationDate),
-    plan:           license.plan || 'pro',
-    userName:       license.user_name || 'MS Bot User',
-    message:        'Lisans başarıyla aktive edildi!',
-  });
 });
 
 // ─── BOT: TOKEN DOĞRULAMA ────────────────────────────────────────────────
@@ -362,7 +372,7 @@ app.post('/validate-token', (req, res) => {
   }
 
   if (!license.activated_at) {
-    db.prepare('UPDATE licenses SET activated_at = datetime("now"), player_id = ? WHERE key = ?').run(playerId || '', licenseKey);
+    db.prepare("UPDATE licenses SET activated_at = datetime('now'), player_id = ? WHERE key = ?").run(playerId || '', licenseKey);
   }
 
   const expiryDate = license.expires_at
