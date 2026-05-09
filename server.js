@@ -16,7 +16,10 @@ const ADMIN_PASSWORD    = process.env.ADMIN_PASSWORD    || 'admin123';
 const LS_WEBHOOK_SECRET = process.env.LS_WEBHOOK_SECRET || '';   // Lemon Squeezy webhook secret
 
 // ─── VERİTABANI KURULUM ─────────────────────────────────────────────────
-const db = new Database(path.join(__dirname, 'mrtbot.db'));
+// Volume varsa /data altında, yoksa local klasörde
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'mrtbot.db');
+console.log('[DB] Using:', DB_PATH);
+const db = new Database(DB_PATH);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS licenses (
